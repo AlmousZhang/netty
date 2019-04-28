@@ -31,9 +31,9 @@ public class DefaultThreadFactory implements ThreadFactory {
 
     private final AtomicInteger nextId = new AtomicInteger();
     private final String prefix;
-    private final boolean daemon;
-    private final int priority;
-    protected final ThreadGroup threadGroup;
+        private final boolean daemon;
+        private final int priority;
+        protected final ThreadGroup threadGroup;
 
     public DefaultThreadFactory(Class<?> poolType) {
         this(poolType, false, Thread.NORM_PRIORITY);
