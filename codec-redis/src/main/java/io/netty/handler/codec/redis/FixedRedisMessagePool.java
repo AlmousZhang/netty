@@ -25,7 +25,7 @@ import io.netty.util.internal.UnstableApi;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
+/**JdbcTransaction
  * A default fixed redis message pool.
  */
 @UnstableApi

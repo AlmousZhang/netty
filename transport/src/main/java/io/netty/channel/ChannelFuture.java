@@ -165,11 +165,17 @@ import java.util.concurrent.TimeUnit;
 public interface ChannelFuture extends Future<Void> {
 
     /**
+     * ChannelFuture 关联的 Channel
      * Returns a channel where the I/O operation associated with this
      * future takes place.
      */
     Channel channel();
 
+    /**
+     * 覆写以下几个方法，使得它们返回值为 ChannelFuture 类型
+     * @param listener
+     * @return
+     */
     @Override
     ChannelFuture addListener(GenericFutureListener<? extends Future<? super Void>> listener);
 

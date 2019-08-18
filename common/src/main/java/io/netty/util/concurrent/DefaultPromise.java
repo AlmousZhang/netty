@@ -44,6 +44,9 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     private static final CauseHolder CANCELLATION_CAUSE_HOLDER = new CauseHolder(ThrowableUtil.unknownStackTrace(
             new CancellationException(), DefaultPromise.class, "cancel(...)"));
 
+    /**
+     * 保存执行结果
+     */
     private volatile Object result;
     private final EventExecutor executor;
     /**
