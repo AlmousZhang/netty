@@ -57,12 +57,23 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(NioEventLoop.class);
 
+    /**
+     * TODO 1007 NioEventLoop cancel
+     */
     private static final int CLEANUP_INTERVAL = 256; // XXX Hard-coded value, but won't need customization.
-
+    /**
+     * 是否禁用 SelectionKey 的优化，默认开启
+     */
     private static final boolean DISABLE_KEY_SET_OPTIMIZATION =
             SystemPropertyUtil.getBoolean("io.netty.noKeySetOptimization", false);
 
+    /**
+     * 少于该 N 值，不开启空轮询重建新的 Selector 对象的功能
+     */
     private static final int MIN_PREMATURE_SELECTOR_RETURNS = 3;
+    /**
+     * NIO Selector 空轮询该 N 次后，重建新的 Selector 对象
+     */
     private static final int SELECTOR_AUTO_REBUILD_THRESHOLD;
 
     private final IntSupplier selectNowSupplier = new IntSupplier() {
@@ -78,6 +89,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     // - http://bugs.sun.com/view_bug.do?bug_id=6427854
     // - https://github.com/netty/netty/issues/203
     static {
+        // 解决 Selector#open() 方法 // <1>
         final String key = "sun.nio.ch.bugLevel";
         final String bugLevel = SystemPropertyUtil.get(key);
         if (bugLevel == null) {
@@ -121,13 +133,30 @@ public final class NioEventLoop extends SingleThreadEventLoop {
      * break out of its selection process. In our case we use a timeout for
      * the select method and the select method will block for that time unless
      * waken up.
+     * 唤醒标记。因为唤醒方法 {@link Selector#wakeup()} 开销比较大，通过该标识，减少调用。
      */
     private final AtomicBoolean wakenUp = new AtomicBoolean();
-
+    /**
+     * Select 策略
+     *
+     * @see #select(boolean)
+     */
     private final SelectStrategy selectStrategy;
-
+    /**
+     * 处理 Channel 的就绪的 IO 事件，占处理任务的总时间的比例
+     */
     private volatile int ioRatio = 50;
+    /**
+     * 取消 SelectionKey 的数量
+     *
+     * TODO 1007 NioEventLoop cancel
+     */
     private int cancelledKeys;
+    /**
+     * 是否需要再次 select Selector 对象
+     *
+     * TODO 1007 NioEventLoop cancel
+     */
     private boolean needsToSelectAgain;
 
     NioEventLoop(NioEventLoopGroup parent, Executor executor, SelectorProvider selectorProvider,
