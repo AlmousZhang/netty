@@ -122,6 +122,8 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
 
     @Override
     public ChannelHandlerContext fireChannelRegistered() {
+        // 这里很关键
+        // findContextInbound() 方法会沿着 pipeline 找到下一个 Inbound 类型的 handler
         invokeChannelRegistered(findContextInbound());
         return this;
     }
@@ -140,7 +142,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
         }
     }
 
-    private void invokeChannelRegistered() {
+    private void  invokeChannelRegistered() {
         if (invokeHandler()) {
             try {
                 ((ChannelInboundHandler) handler()).channelRegistered(this);
