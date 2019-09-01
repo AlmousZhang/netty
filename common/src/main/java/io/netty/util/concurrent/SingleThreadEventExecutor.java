@@ -73,17 +73,32 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     };
 
+    /**
+     * 字段的原子更新器
+     */
     private static final AtomicIntegerFieldUpdater<SingleThreadEventExecutor> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(SingleThreadEventExecutor.class, "state");
     private static final AtomicReferenceFieldUpdater<SingleThreadEventExecutor, ThreadProperties> PROPERTIES_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(
                     SingleThreadEventExecutor.class, ThreadProperties.class, "threadProperties");
-
+    /**
+     * 任务队列
+     */
     private final Queue<Runnable> taskQueue;
 
+    /**
+     *  线程
+     */
     private volatile Thread thread;
+
+    /**
+     * 线程属性
+     */
     @SuppressWarnings("unused")
     private volatile ThreadProperties threadProperties;
+    /**
+     *执行器
+     */
     private final Executor executor;
     private volatile boolean interrupted;
 
