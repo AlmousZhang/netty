@@ -69,13 +69,17 @@ public final class ChannelOutboundBuffer {
         }
     };
 
+    /**
+     * 所绑定的Channel
+     */
     private final Channel channel;
 
     // Entry(flushedEntry) --> ... Entry(unflushedEntry) --> ... Entry(tailEntry)
-    //
+    //表示下一个要被flush的Entry
     // The Entry that is the first in the linked-list structure that was flushed
     private Entry flushedEntry;
     // The Entry which is the first unflushed in the linked-list structure
+    // 表示下一次要flush截止的Entry
     private Entry unflushedEntry;
     // The Entry which represents the tail of the buffer
     private Entry tailEntry;
@@ -90,12 +94,14 @@ public final class ChannelOutboundBuffer {
     private static final AtomicLongFieldUpdater<ChannelOutboundBuffer> TOTAL_PENDING_SIZE_UPDATER =
             AtomicLongFieldUpdater.newUpdater(ChannelOutboundBuffer.class, "totalPendingSize");
 
+    //已存储的需要被write到socket发送缓存中的byte大小
     @SuppressWarnings("UnusedDeclaration")
     private volatile long totalPendingSize;
 
     private static final AtomicIntegerFieldUpdater<ChannelOutboundBuffer> UNWRITABLE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(ChannelOutboundBuffer.class, "unwritable");
 
+    //表示当前channel的待发送缓存是否可以继续写入数据
     @SuppressWarnings("UnusedDeclaration")
     private volatile int unwritable;
 
