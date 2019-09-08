@@ -100,6 +100,7 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
     ChannelConfig config();
 
     /**
+     * 是否开放
      * Returns {@code true} if the {@link Channel} is open and may get active later
      */
     boolean isOpen();
