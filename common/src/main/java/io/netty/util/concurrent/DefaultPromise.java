@@ -34,9 +34,11 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(DefaultPromise.class);
     private static final InternalLogger rejectedExecutionLogger =
             InternalLoggerFactory.getInstance(DefaultPromise.class.getName() + ".rejectedExecution");
+    // 可以嵌套的Listener的最大层数，可见最大值为8
     private static final int MAX_LISTENER_STACK_DEPTH = Math.min(8,
             SystemPropertyUtil.getInt("io.netty.defaultPromise.maxListenerStackDepth", 8));
     @SuppressWarnings("rawtypes")
+    // result字段由使用RESULT_UPDATER更新
     private static final AtomicReferenceFieldUpdater<DefaultPromise, Object> RESULT_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(DefaultPromise.class, Object.class, "result");
     private static final Object SUCCESS = new Object();
@@ -48,6 +50,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
      * 保存执行结果
      */
     private volatile Object result;
+    // 执行listener操作的执行器
     private final EventExecutor executor;
     /**
      * One or more listeners. Can be a {@link GenericFutureListener} or a {@link DefaultFutureListeners}.
@@ -55,10 +58,12 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
      *
      * Threading - synchronized(this). We must support adding listeners when there is no EventExecutor.
      */
+    // 监听者
     private Object listeners;
     /**
      * Threading - synchronized(this). We are required to hold the monitor to use Java's underlying wait()/notifyAll().
      */
+    // 监听者
     private short waiters;
 
     /**
@@ -465,7 +470,9 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         Object listeners;
         synchronized (this) {
             // Only proceed if there are listeners to notify and we are not already notifying listeners.
+            // 此时外部线程可能会执行添加Listener操作，所以需要同步
             if (notifyingListeners || this.listeners == null) {
+                // 正在通知或已没有监听者（外部线程删除）直接返回
                 return;
             }
             notifyingListeners = true;

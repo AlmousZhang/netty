@@ -43,8 +43,10 @@ abstract class CompleteChannelFuture extends CompleteFuture<Void> implements Cha
 
     @Override
     protected EventExecutor executor() {
+        // 构造方法指定
         EventExecutor e = super.executor();
         if (e == null) {
+            // 构造方法未指定使用channel注册到的eventLoop
             return channel().eventLoop();
         } else {
             return e;

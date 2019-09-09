@@ -66,6 +66,7 @@ public interface ChannelFutureListener extends GenericFutureListener<ChannelFutu
         @Override
         public void operationComplete(ChannelFuture future) {
             if (!future.isSuccess()) {
+                // 操作失败时触发一个ExceptionCaught事件
                 future.channel().pipeline().fireExceptionCaught(future.cause());
             }
         }
