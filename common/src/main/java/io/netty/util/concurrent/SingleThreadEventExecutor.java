@@ -333,15 +333,19 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (task == null) {
             throw new NullPointerException("task");
         }
+        // 添加任务到队列
         if (!offerTask(task)) {
+            // 添加失败，则拒绝任务
             reject(task);
         }
     }
 
     final boolean offerTask(Runnable task) {
+        // 关闭时，拒绝任务
         if (isShutdown()) {
             reject();
         }
+        // 添加任务到队列
         return taskQueue.offer(task);
     }
 
@@ -783,6 +787,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (!inEventLoop) {
             // 如果不是 NioEventLoop 内部线程提交的 task，那么判断下线程是否已经启动，没有的话，就启动线程
             startThread();
+            // 若已经关闭，移除任务，并进行拒绝
             if (isShutdown()) {
                 boolean reject = false;
                 try {

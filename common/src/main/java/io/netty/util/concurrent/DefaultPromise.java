@@ -37,12 +37,16 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     // 可以嵌套的Listener的最大层数，可见最大值为8
     private static final int MAX_LISTENER_STACK_DEPTH = Math.min(8,
             SystemPropertyUtil.getInt("io.netty.defaultPromise.maxListenerStackDepth", 8));
+    // result字段由使用RESULT_UPDATER更新
     @SuppressWarnings("rawtypes")
     // result字段由使用RESULT_UPDATER更新
     private static final AtomicReferenceFieldUpdater<DefaultPromise, Object> RESULT_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(DefaultPromise.class, Object.class, "result");
+    // 此处的Signal是Netty定义的类，继承自Error，异步操作成功且结果为null时设置为改值
     private static final Object SUCCESS = new Object();
+    // 异步操作不可取消
     private static final Object UNCANCELLABLE = new Object();
+    // 异步操作失败时保存异常原因
     private static final CauseHolder CANCELLATION_CAUSE_HOLDER = new CauseHolder(ThrowableUtil.unknownStackTrace(
             new CancellationException(), DefaultPromise.class, "cancel(...)"));
 
@@ -414,20 +418,24 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
 
     private void notifyListeners() {
         EventExecutor executor = executor();
+        //执行线程为指定线程
         if (executor.inEventLoop()) {
             final InternalThreadLocalMap threadLocals = InternalThreadLocalMap.get();
             final int stackDepth = threadLocals.futureListenerStackDepth();
             if (stackDepth < MAX_LISTENER_STACK_DEPTH) {
+                // 执行前增加嵌套层数
                 threadLocals.setFutureListenerStackDepth(stackDepth + 1);
                 try {
                     notifyListenersNow();
                 } finally {
+                    // 执行完毕，无论如何都要回滚嵌套层数
                     threadLocals.setFutureListenerStackDepth(stackDepth);
                 }
                 return;
             }
         }
 
+        // 外部线程则提交任务给执行线程
         safeExecute(executor, new Runnable() {
             @Override
             public void run() {
@@ -468,6 +476,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
 
     private void notifyListenersNow() {
         Object listeners;
+        // 此时外部线程可能会执行添加Listener操作，所以需要同步
         synchronized (this) {
             // Only proceed if there are listeners to notify and we are not already notifying listeners.
             // 此时外部线程可能会执行添加Listener操作，所以需要同步
@@ -487,11 +496,13 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
             }
             synchronized (this) {
                 if (this.listeners == null) {
+                    // 执行完毕且外部线程没有再添加监听者
                     // Nothing can throw from within this method, so setting notifyingListeners back to false does not
                     // need to be in a finally block.
                     notifyingListeners = false;
                     return;
                 }
+                // 外部线程添加了监听者继续执行
                 listeners = this.listeners;
                 this.listeners = null;
             }

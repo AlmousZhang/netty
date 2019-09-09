@@ -41,16 +41,25 @@ abstract class PoolArena<T> implements PoolArenaMetric {
     static final int numTinySubpagePools = 512 >>> 4;
 
     final PooledByteBufAllocator parent;
-
+    // chunk相关满二叉树的高度
     private final int maxOrder;
+    // 单个page的大小
     final int pageSize;
+    // 用于辅助计算
     final int pageShifts;
+    // chunk的大小
     final int chunkSize;
+   //用于判断请求是否为Small/Tiny
     final int subpageOverflowMask;
+    //small请求的双向链表头个数
     final int numSmallSubpagePools;
+    // 对齐基准
     final int directMemoryCacheAlignment;
+    // 用于对齐内存
     final int directMemoryCacheAlignmentMask;
+    // Subpage双向链表
     private final PoolSubpage<T>[] tinySubpagePools;
+    // Subpage双向链表
     private final PoolSubpage<T>[] smallSubpagePools;
 
     private final PoolChunkList<T> q050;

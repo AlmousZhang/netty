@@ -66,11 +66,18 @@ public abstract class AbstractNioChannel extends AbstractChannel {
     };
 
     /**
+     * 连接异步结果
      * The future of the current connection attempt.  If not null, subsequent
      * connection attempts will fail.
      */
     private ChannelPromise connectPromise;
+    /**
+     * 连接超时检测任务异步结果
+     */
     private ScheduledFuture<?> connectTimeoutFuture;
+    /**
+     * 连接的远端地址
+     */
     private SocketAddress requestedRemoteAddress;
 
     /**
@@ -228,6 +235,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
             int interestOps = key.interestOps();
             if ((interestOps & readInterestOp) != 0) {
                 // only remove readInterestOp if needed
+                // 设置为不再感兴趣
                 key.interestOps(interestOps & ~readInterestOp);
             }
         }
@@ -277,6 +285,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
                         @Override
                         public void operationComplete(ChannelFuture future) throws Exception {
                             if (future.isCancelled()) {
+                                // 连接操作取消则连接超时检测任务取消
                                 if (connectTimeoutFuture != null) {
                                     connectTimeoutFuture.cancel(false);
                                 }
@@ -300,19 +309,23 @@ public abstract class AbstractNioChannel extends AbstractChannel {
 
             // Get the state as trySuccess() may trigger an ChannelFutureListener that will close the Channel.
             // We still need to ensure we call fireChannelActive() in this case.
+            // 操作已取消或Promise已被通知？
             boolean active = isActive();
 
             // trySuccess() will return false if a user cancelled the connection attempt.
+            // False表示用户取消操作
             boolean promiseSet = promise.trySuccess();
 
             // Regardless if the connection attempt was cancelled, channelActive() event should be triggered,
             // because what happened is what happened.
+            // 此时用户没有取消Connect操作
             if (!wasActive && active) {
                 pipeline().fireChannelActive();
             }
 
             // If a user cancelled the connection attempt, close the channel, which is followed by channelInactive().
             if (!promiseSet) {
+                // 操作已被用户取消，关闭Channel
                 close(voidPromise());
             }
         }
@@ -337,7 +350,9 @@ public abstract class AbstractNioChannel extends AbstractChannel {
 
             try {
                 boolean wasActive = isActive();
+                // 模板方法
                 doFinishConnect();
+                // 首次Active触发Active事件
                 fulfillConnectPromise(connectPromise, wasActive);
             } catch (Throwable t) {
                 fulfillConnectPromise(connectPromise, annotateConnectException(t, requestedRemoteAddress));
@@ -345,6 +360,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
                 // Check for null as the connectTimeoutFuture is only created if a connectTimeoutMillis > 0 is used
                 // See https://github.com/netty/netty/issues/1770
                 if (connectTimeoutFuture != null) {
+                    // 连接完成，取消超时检测任务
                     connectTimeoutFuture.cancel(false);
                 }
                 connectPromise = null;

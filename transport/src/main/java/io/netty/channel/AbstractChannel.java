@@ -54,17 +54,33 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             new ExtendedClosedChannelException(null), AbstractUnsafe.class, "flush0()");
     private static final NotYetConnectedException FLUSH0_NOT_YET_CONNECTED_EXCEPTION = ThrowableUtil.unknownStackTrace(
             new NotYetConnectedException(), AbstractUnsafe.class, "flush0()");
-
+    /**
+     * 处理通道
+     */
     private final Channel parent;
     private final ChannelId id;
     private final Unsafe unsafe;
+    /**
+     * 处理通道
+     */
     private final DefaultChannelPipeline pipeline;
     private final VoidChannelPromise unsafeVoidPromise = new VoidChannelPromise(this, false);
     private final CloseFuture closeFuture = new CloseFuture(this);
-
+    /**
+     * 本地地址
+     */
     private volatile SocketAddress localAddress;
+    /**
+     *  远端地址
+     */
     private volatile SocketAddress remoteAddress;
+    /**
+     * EventLoop线程
+     */
     private volatile EventLoop eventLoop;
+    /**
+     * 是否注册到EventLoop
+     */
     private volatile boolean registered;
     private boolean closeInitiated;
     private Throwable initialCloseCause;
@@ -122,6 +138,9 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
     @Override
     public boolean isWritable() {
         ChannelOutboundBuffer buf = unsafe.outboundBuffer();
+        /**
+         * 写缓冲区不为null且可写
+         */
         return buf != null && buf.isWritable();
     }
 
