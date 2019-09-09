@@ -61,9 +61,17 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     private static final AtomicReferenceFieldUpdater<DefaultChannelPipeline, MessageSizeEstimator.Handle> ESTIMATOR =
             AtomicReferenceFieldUpdater.newUpdater(
                     DefaultChannelPipeline.class, MessageSizeEstimator.Handle.class, "estimatorHandle");
+    /**
+     * 双向链表头
+     */
     final AbstractChannelHandlerContext head;
+    /**
+     * 双向链表尾
+     */
     final AbstractChannelHandlerContext tail;
-
+    /**
+     * 对应Channel
+     */
     private final Channel channel;
     private final ChannelFuture succeededFuture;
     private final VoidChannelPromise voidPromise;
@@ -199,16 +207,19 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     public final ChannelPipeline addLast(EventExecutorGroup group, String name, ChannelHandler handler) {
         final AbstractChannelHandlerContext newCtx;
         synchronized (this) {
+            // 检查Handler是否重复添加
             checkMultiplicity(handler);
-
+            // 新建一个Context
             newCtx = newContext(group, filterName(name, handler), handler);
-
+            // 实际的双向链表插入操作
             addLast0(newCtx);
 
             // If the registered is false it means that the channel was not registered on an eventLoop yet.
             // In this case we add the context to the pipeline and add a task that will call
             // ChannelHandler.handlerAdded(...) once the channel is registered.
             if (!registered) {
+                // 此时Channel还没注册的EventLoop中，而Netty的原则是事件在同一个EventLoop执行，
+                // 所以新增一个任务用于注册后添加
                 newCtx.setAddPending();
                 callHandlerCallbackLater(newCtx, true);
                 return this;
@@ -216,10 +227,12 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
             EventExecutor executor = newCtx.executor();
             if (!executor.inEventLoop()) {
+                // 当前线程不是EventLoop线程
                 callHandlerAddedInEventLoop(newCtx, executor);
                 return this;
             }
         }
+        // 当前线程为EventLoop线程且已注册则直接触发HandlerAdd事件
         callHandlerAdded0(newCtx);
         return this;
     }
