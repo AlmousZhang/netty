@@ -42,6 +42,7 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
         return executor;
     }
 
+
     @Override
     public Future<V> addListener(GenericFutureListener<? extends Future<? super V>> listener) {
         if (listener == null) {

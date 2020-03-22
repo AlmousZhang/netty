@@ -73,17 +73,32 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     };
 
+    /**
+     * 字段的原子更新器
+     */
     private static final AtomicIntegerFieldUpdater<SingleThreadEventExecutor> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(SingleThreadEventExecutor.class, "state");
     private static final AtomicReferenceFieldUpdater<SingleThreadEventExecutor, ThreadProperties> PROPERTIES_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(
                     SingleThreadEventExecutor.class, ThreadProperties.class, "threadProperties");
-
+    /**
+     * 任务队列
+     */
     private final Queue<Runnable> taskQueue;
 
+    /**
+     *  线程
+     */
     private volatile Thread thread;
+
+    /**
+     * 线程属性
+     */
     @SuppressWarnings("unused")
     private volatile ThreadProperties threadProperties;
+    /**
+     *执行器
+     */
     private final Executor executor;
     private volatile boolean interrupted;
 
@@ -566,6 +581,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
 
         if (isShuttingDown()) {
+            // 正在关闭阻止其他线程
             return terminationFuture();
         }
 
@@ -574,6 +590,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         int oldState;
         for (;;) {
             if (isShuttingDown()) {
+                // 正在关闭阻止其他线程
                 return terminationFuture();
             }
             int newState;
@@ -588,14 +605,19 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                         newState = ST_SHUTTING_DOWN;
                         break;
                     default:
+                        // 一个线程已修改好线程状态，此时这个线程才执行16行代码
                         newState = oldState;
+                        // 已经有线程唤醒，所以不用再唤醒
                         wakeup = false;
                 }
             }
             if (STATE_UPDATER.compareAndSet(this, oldState, newState)) {
+                // 保证只有一个线程将oldState修改为newState
                 break;
             }
+            // 隐含STATE_UPDATER已被修改，则在下一次循环返回
         }
+        // 在default情况下会更新这两个值
         gracefulShutdownQuietPeriod = unit.toNanos(quietPeriod);
         gracefulShutdownTimeout = unit.toNanos(timeout);
 
@@ -680,22 +702,24 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      */
     protected boolean confirmShutdown() {
         if (!isShuttingDown()) {
+            // 没有调用shutdown相关的方法直接返回
             return false;
         }
-
+        // 必须是原生线程
         if (!inEventLoop()) {
             throw new IllegalStateException("must be invoked from an event loop");
         }
-
+        // 取消调度任务
         cancelScheduledTasks();
-
+        // 优雅关闭开始时间，这也是一个标记
         if (gracefulShutdownStartTime == 0) {
             gracefulShutdownStartTime = ScheduledFutureTask.nanoTime();
         }
-
+        // 执行完普通任务或者没有普通任务时执行完shutdownHook任务
         if (runAllTasks() || runShutdownHooks()) {
             if (isShutdown()) {
                 // Executor shut down - no new tasks anymore.
+                // 调用shutdown()方法直接退出
                 return true;
             }
 
