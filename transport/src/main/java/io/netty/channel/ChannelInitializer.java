@@ -126,6 +126,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
     private boolean initChannel(ChannelHandlerContext ctx) throws Exception {
         if (initMap.add(ctx)) { // Guard against re-entrance.
             try {
+                // 1. 将把我们自定义的 handlers 添加到 pipeline 中
                 initChannel((C) ctx.channel());
             } catch (Throwable cause) {
                 // Explicitly call exceptionCaught(...) as we removed the handler before calling initChannel(...).
@@ -134,6 +135,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
             } finally {
                 ChannelPipeline pipeline = ctx.pipeline();
                 if (pipeline.context(this) != null) {
+                    // 2. 将 ChannelInitializer 实例从 pipeline 中删除
                     pipeline.remove(this);
                 }
             }
